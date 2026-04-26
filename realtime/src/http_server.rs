@@ -4,29 +4,46 @@ use anyhow::Error;
 use axum::{
     Router,
     http::{HeaderValue, Method},
-    routing::get,
+    routing::{get, post},
 };
-use tokio::{net::TcpListener, sync::broadcast::Sender};
+use tokio::{
+    net::TcpListener,
+    sync::{broadcast::Sender, watch},
+};
 use tower_http::cors::CorsLayer;
 use tracing::info;
 
 use crate::services::state_service::StateService;
+use crate::source::{Broadcast, ReplayState, Source};
 
 mod connections;
 mod current;
 mod drivers;
 mod health;
 mod realtime;
+mod replay;
 
 pub struct Context {
     pub state_service: StateService,
-    pub tx: Sender<String>,
+    pub tx: Sender<Broadcast>,
+    pub source_tx: watch::Sender<Source>,
+    pub replay_state: ReplayState,
 }
 
-pub async fn start(state_service: StateService, tx: Sender<String>) -> Result<(), Error> {
+pub async fn start(
+    state_service: StateService,
+    tx: Sender<Broadcast>,
+    source_tx: watch::Sender<Source>,
+    replay_state: ReplayState,
+) -> Result<(), Error> {
     let addr = env::var("ADDRESS").unwrap_or_else(|_| "0.0.0.0:80".to_string());
 
-    let context = Arc::new(Context { state_service, tx });
+    let context = Arc::new(Context {
+        state_service,
+        tx,
+        source_tx,
+        replay_state,
+    });
 
     let cors = cors_layer()?;
 
@@ -36,6 +53,9 @@ pub async fn start(state_service: StateService, tx: Sender<String>) -> Result<()
         .route("/api/current", get(current::current_state))
         .route("/api/drivers", get(drivers::drivers))
         .route("/api/connections", get(connections::current_connections))
+        .route("/api/replay/start", post(replay::start_replay))
+        .route("/api/replay/stop", post(replay::stop_replay))
+        .route("/api/replay/status", get(replay::status))
         .with_state(context)
         .layer(cors)
         .into_make_service();
@@ -57,5 +77,5 @@ pub fn cors_layer() -> Result<CorsLayer, Error> {
 
     Ok(CorsLayer::new()
         .allow_origin(origins)
-        .allow_methods([Method::GET, Method::CONNECT]))
+        .allow_methods([Method::GET, Method::POST, Method::CONNECT]))
 }

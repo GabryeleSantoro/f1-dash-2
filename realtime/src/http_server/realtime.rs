@@ -13,6 +13,7 @@ use futures::{Stream, StreamExt, stream};
 use tracing::{debug, error, info};
 
 use crate::http_server::Context;
+use crate::source::Broadcast;
 
 pub async fn sse_stream(
     State(ctx): State<Arc<Context>>,
@@ -48,7 +49,11 @@ pub async fn sse_stream(
                 }
             }
         })
-        .map(|data| Event::default().event("update").data(data))
+        .map(|msg| match msg {
+            Broadcast::Reset => Event::default().event("reset").data(""),
+            Broadcast::Initial(s) => Event::default().event("initial").data(s),
+            Broadcast::Update(s) => Event::default().event("update").data(s),
+        })
         .map(Ok);
 
     let stream = initial.chain(updates);

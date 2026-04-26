@@ -14,6 +14,7 @@ use tracing::info;
 use shared::tracing_subscriber;
 
 mod endpoints {
+    pub(crate) mod archive;
     pub(crate) mod health;
     pub(crate) mod schedule;
 }
@@ -27,6 +28,8 @@ async fn main() -> Result<(), Error> {
     let app = Router::new()
         .route("/api/schedule", get(endpoints::schedule::get))
         .route("/api/schedule/next", get(endpoints::schedule::get_next))
+        .route("/api/archive", get(endpoints::archive::get))
+        .route("/api/archive/session", get(endpoints::archive::get_session))
         .route("/api/health", get(endpoints::health::check));
 
     info!(addr, "starting api http server");
