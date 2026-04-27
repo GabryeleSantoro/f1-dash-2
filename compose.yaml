@@ -1,6 +1,10 @@
 services:
   api:
     image: ghcr.io/slowlydev/f1-dash-api:latest
+    # Exposes:
+    #   GET /api/schedule            — current/upcoming sessions
+    #   GET /api/archive[?year=YYYY] — past meetings/sessions from F1 CDN
+    #   GET /api/archive/session?path=... — feeds available for a session
     ports:
       - 4010:80
     environment:
@@ -10,6 +14,11 @@ services:
 
   realtime:
     image: ghcr.io/slowlydev/f1-dash-realtime:latest
+    # Exposes:
+    #   GET  /api/realtime          — SSE stream (initial/update/reset events)
+    #   POST /api/replay/start      — body { path, speed } switch to archive replay
+    #   POST /api/replay/stop       — switch back to live
+    #   GET  /api/replay/status     — { mode, path?, positionMs?, totalMs?, speed? }
     ports:
       - 4000:80
     environment:

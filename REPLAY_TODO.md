@@ -76,45 +76,45 @@ No recordings, no simulator, no shared volumes required.
 
 ## Phase 3 — Dashboard: archive page
 
-- [ ] Create `dashboard/src/app/(nav)/archive/page.tsx`
+- [x] Create `dashboard/src/app/(nav)/archive/page.tsx`
   - Fetch `GET /api/archive` (from `api` service via `API_URL`)
   - Group sessions by meeting, display as an expandable list
   - Each session row: name, date, type badge, **"Watch"** button
   - "Watch" calls `POST realtime/api/replay/start` with the session `path`
     then navigates to `/dashboard`
 
-- [ ] Create `dashboard/src/lib/fetchArchive.ts`
+- [x] Create `dashboard/src/lib/fetchArchive.ts`
   - `getArchive(year?)` — server-side fetch from `API_URL/api/archive`
   - Types matching the `api` response shape
 
-- [ ] Add "Archive" link to `Sidebar.tsx` navigation
+- [x] Add "Archive" link to `Sidebar.tsx` navigation (also (nav)/layout.tsx top nav)
 
 ---
 
 ## Phase 4 — Dashboard: playback controls
 
-- [ ] Create `dashboard/src/hooks/useReplayStatus.ts`
+- [x] Create `dashboard/src/hooks/useReplayStatus.ts`
   - Polls `GET /api/replay/status` (from `NEXT_PUBLIC_LIVE_URL`) every second
   - Returns `{ isReplay, path, positionMs, totalMs, speed }`
 
-- [ ] Create `dashboard/src/hooks/useReplayControls.ts`
+- [x] Create `dashboard/src/hooks/useReplayControls.ts`
   - `stop()` → `POST /api/replay/stop`
   - `setSpeed(n: 0.5 | 1 | 2 | 4)` → `POST /api/replay/start` with same
     path + new speed (restarts from current position — acceptable for now)
 
-- [ ] Create `dashboard/src/components/ReplayBar.tsx`
+- [x] Create `dashboard/src/components/ReplayBar.tsx`
   - Shown in `DashboardLayout` only when `isReplay === true`
   - Replaces the live `ConnectionStatus` indicator
   - Contents: session name, progress bar (positionMs / totalMs),
     speed selector buttons (0.5× 1× 2× 4×), **Stop** button
   - Progress bar is read-only for now (seeking is a stretch goal)
 
-- [ ] Handle `"reset"` SSE event in `useSocket.ts`
+- [x] Handle `"reset"` SSE event in `useSocket.ts`
   - On `reset` event: call `dataStore.setState(null)` and
     `dataStore.setCarsData(null)` and `dataStore.setPositions(null)`
   - Clears stale data before the new `initial` event arrives
 
-- [ ] Show "Replay ended" state in `DashboardLayout` when SSE closes
+- [x] Show "Replay ended" state in `DashboardLayout` when SSE closes
   normally after an archive session finishes (distinct from a
   connection error)
 
@@ -122,10 +122,10 @@ No recordings, no simulator, no shared volumes required.
 
 ## Phase 5 — Wiring & polish
 
-- [ ] Update `compose.yaml`: expose `realtime` replay control endpoints
+- [x] Update `compose.yaml`: expose `realtime` replay control endpoints
   (already on port 4000, no change needed — just document)
-- [ ] Update `CLAUDE.md` with replay-specific env vars and endpoints
-- [ ] Update `SETUP.md` with archive feature description
+- [x] Update `CLAUDE.md` with replay-specific env vars and endpoints
+- [x] Update `SETUP.md` with archive feature description
 - [ ] Stretch: seek support — `POST /api/replay/seek { position_ms }`,
   re-fetch all keyframes up to that point and restart stream from
   nearest `.jsonStream` line

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 
 import type { MessageInitial, MessageUpdate } from "@/types/message.type";
 
+import { useDataStore } from "@/stores/useDataStore";
+
 import { env } from "@/env";
 
 type Props = {
@@ -11,12 +13,21 @@ type Props = {
 
 export const useSocket = ({ handleInitial, handleUpdate }: Props) => {
 	const [connected, setConnected] = useState<boolean>(false);
+	const [closedNormally, setClosedNormally] = useState<boolean>(false);
 
 	useEffect(() => {
 		const sse = new EventSource(`${env.NEXT_PUBLIC_LIVE_URL}/api/realtime`);
 
-		sse.onerror = () => setConnected(false);
-		sse.onopen = () => setConnected(true);
+		sse.onerror = () => {
+			setConnected(false);
+			if (sse.readyState === EventSource.CLOSED) {
+				setClosedNormally(true);
+			}
+		};
+		sse.onopen = () => {
+			setConnected(true);
+			setClosedNormally(false);
+		};
 
 		sse.addEventListener("initial", (message) => {
 			handleInitial(JSON.parse(message.data));
@@ -26,9 +37,16 @@ export const useSocket = ({ handleInitial, handleUpdate }: Props) => {
 			handleUpdate(JSON.parse(message.data));
 		});
 
+		sse.addEventListener("reset", () => {
+			const store = useDataStore.getState();
+			store.setState(null);
+			store.setCarsData(null);
+			store.setPositions(null);
+		});
+
 		return () => sse.close();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
-	return { connected };
+	return { connected, closedNormally };
 };

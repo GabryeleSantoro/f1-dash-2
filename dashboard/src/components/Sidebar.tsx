@@ -33,11 +33,16 @@ const liveTimingItems = [
 	},
 ];
 
-type Props = {
-	connected: boolean;
+type ReplayInfo = {
+	isReplay: boolean;
 };
 
-export default function Sidebar({ connected }: Props) {
+type Props = {
+	connected: boolean;
+	replay?: ReplayInfo;
+};
+
+export default function Sidebar({ connected, replay }: Props) {
 	// const favoriteDrivers = useSettingsStore((state) => state.favoriteDrivers);
 	// const drivers = useDataStore((state) => state.driverList);
 
@@ -104,10 +109,16 @@ export default function Sidebar({ connected }: Props) {
 				>
 					<div className="flex items-center justify-between gap-2">
 						<div className="flex items-center gap-2">
-							<DelayInput saveDelay={500} />
-							<DelayTimer />
-
-							<ConnectionStatus connected={connected} />
+							{!replay?.isReplay && (
+								<>
+									<DelayInput saveDelay={500} />
+									<DelayTimer />
+									<ConnectionStatus connected={connected} />
+								</>
+							)}
+							{replay?.isReplay && (
+								<span className="rounded-md bg-emerald-700 px-2 py-1 text-xs font-semibold text-white">REPLAY</span>
+							)}
 						</div>
 
 						<SidenavButton className="hidden md:flex" onClick={() => (pinned ? unpin() : pin())} />
@@ -141,6 +152,7 @@ export default function Sidebar({ connected }: Props) {
 						<Item item={{ href: "/dashboard/settings", name: "Settings" }} />
 
 						<Item target="_blank" item={{ href: "/schedule", name: "Schedule" }} />
+						<Item target="_blank" item={{ href: "/archive", name: "Archive" }} />
 						<Item target="_blank" item={{ href: "/help", name: "Help" }} />
 						<Item target="_blank" item={{ href: "/", name: "Home" }} />
 					</div>

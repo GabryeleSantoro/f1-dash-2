@@ -25,6 +25,9 @@ export default function Layout({ children }: Props) {
 					<Link className="transition duration-100 active:scale-95" href="/schedule">
 						Schedule
 					</Link>
+					<Link className="transition duration-100 active:scale-95" href="/archive">
+						Archive
+					</Link>
 					<Link className="transition duration-100 active:scale-95" href="/help">
 						Help
 					</Link>

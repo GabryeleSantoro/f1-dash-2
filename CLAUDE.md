@@ -29,6 +29,21 @@ F1 SignalR → [realtime] → SSE /api/realtime → [dashboard useSocket]
 
 `CarData.z` and `Position.z` topics are zlib-compressed — the dashboard decompresses them with `pako` via `lib/inflate.ts`.
 
+### Archive replay
+
+`realtime` can replay completed sessions from F1's public CDN (`livetiming.formula1.com/static/`) instead of the live SignalR feed. Source selection is driven by a `tokio::watch::Sender<Source>` channel where `Source` is `Live | Archive { path, speed }`. Switching emits a `reset` SSE event to clients before the new ingest task starts.
+
+```
+[dashboard ReplayBar] → POST /api/replay/start { path, speed }
+                     → realtime watch channel → Source::Archive
+                     → cancel live ingest
+                     → emit "reset" SSE → dashboard clears state
+                     → fetch keyframes + .jsonStream lines from F1 CDN
+                     → emit "initial" + "update" SSE at wall-clock × speed
+```
+
+Archive index data is served by `api`: `GET /api/archive[?year=]` returns meetings/sessions; `GET /api/archive/session?path=` returns available feeds.
+
 ### Rust workspace
 
 All Rust crates live in the workspace root. Default members are `realtime` and `api`.
@@ -87,13 +102,22 @@ Ports: dashboard → 3000, realtime → 4000, api → 4010.
 | File | Purpose |
 |---|---|
 | `dashboard/src/hooks/useDataEngine.ts` | Core data pipeline: buffers, delay logic, 200ms flush interval |
-| `dashboard/src/hooks/useSocket.ts` | SSE connection to realtime service |
+| `dashboard/src/hooks/useSocket.ts` | SSE connection to realtime service; handles `initial`/`update`/`reset` events |
+| `dashboard/src/hooks/useReplayStatus.ts` | Polls `/api/replay/status` once per second |
+| `dashboard/src/hooks/useReplayControls.ts` | `stop()` / `setSpeed()` for replay mode |
+| `dashboard/src/components/ReplayBar.tsx` | Progress + speed UI shown during archive replay |
+| `dashboard/src/app/(nav)/archive/page.tsx` | Archive browser — lists meetings/sessions, "Watch" starts replay |
+| `dashboard/src/lib/fetchArchive.ts` | Server-side fetch for `API_URL/api/archive` |
 | `dashboard/src/stores/useDataStore.ts` | Zustand store: `state`, `carsData`, `positions` |
 | `dashboard/src/stores/useSettingsStore.ts` | User settings including `delay` (seconds) |
 | `dashboard/src/env.ts` | Zod-validated env schema; client gets vars injected via `EnvScript` |
 | `dashboard/src/app/dashboard/layout.tsx` | Wires socket + data engine into layout; handles syncing state |
 | `realtime/src/f1.rs` | Subscribes to 17 F1 topics, restarts on `SessionInfo` change |
+| `realtime/src/archive.rs` | Archive ingest: fetches CDN keyframes + `.jsonStream`, paces by `dt/speed` |
+| `realtime/src/source.rs` | `Source` enum + watch channel driving live↔archive switching |
+| `realtime/src/http_server/replay.rs` | `POST /api/replay/start\|stop`, `GET /api/replay/status` |
 | `realtime/src/services/state_service.rs` | In-memory state as `Arc<RwLock<Value>>` with recursive merge |
+| `api/src/endpoints/archive.rs` | `GET /api/archive[?year=]` + `GET /api/archive/session?path=` proxies F1 CDN |
 | `shared/src/lib.rs` | `merge()` — recursive JSON merge (object keys and array indices by numeric key) |
 | `signalr/src/lib.rs` | SignalR negotiate → WebSocket connect → subscribe → stream |
 

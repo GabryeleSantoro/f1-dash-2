@@ -1,25 +1,27 @@
-'use client';
+"use client";
 
-import { type ReactNode } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { type ReactNode } from "react";
+import { AnimatePresence, motion } from "motion/react";
 
-import { useDataEngine } from '@/hooks/useDataEngine';
-import { useWakeLock } from '@/hooks/useWakeLock';
-import { useStores } from '@/hooks/useStores';
-import { useSocket } from '@/hooks/useSocket';
+import { useDataEngine } from "@/hooks/useDataEngine";
+import { useWakeLock } from "@/hooks/useWakeLock";
+import { useStores } from "@/hooks/useStores";
+import { useSocket } from "@/hooks/useSocket";
+import { useReplayStatus } from "@/hooks/useReplayStatus";
 
-import { useSettingsStore } from '@/stores/useSettingsStore';
-import { useSidebarStore } from '@/stores/useSidebarStore';
-import { useDataStore } from '@/stores/useDataStore';
+import { useSettingsStore } from "@/stores/useSettingsStore";
+import { useSidebarStore } from "@/stores/useSidebarStore";
+import { useDataStore } from "@/stores/useDataStore";
 
-import Sidebar from '@/components/Sidebar';
-import SidenavButton from '@/components/SidenavButton';
-import SessionInfo from '@/components/SessionInfo';
-import WeatherInfo from '@/components/WeatherInfo';
-import TrackInfo from '@/components/TrackInfo';
-import DelayInput from '@/components/DelayInput';
-import DelayTimer from '@/components/DelayTimer';
-import ConnectionStatus from '@/components/ConnectionStatus';
+import Sidebar from "@/components/Sidebar";
+import SidenavButton from "@/components/SidenavButton";
+import SessionInfo from "@/components/SessionInfo";
+import WeatherInfo from "@/components/WeatherInfo";
+import TrackInfo from "@/components/TrackInfo";
+import DelayInput from "@/components/DelayInput";
+import DelayTimer from "@/components/DelayTimer";
+import ConnectionStatus from "@/components/ConnectionStatus";
+import ReplayBar from "@/components/ReplayBar";
 
 type Props = {
 	children: ReactNode;
@@ -28,28 +30,33 @@ type Props = {
 export default function DashboardLayout({ children }: Props) {
 	const stores = useStores();
 	const { handleInitial, handleUpdate, maxDelay } = useDataEngine(stores);
-	const { connected } = useSocket({ handleInitial, handleUpdate });
+	const { connected, closedNormally } = useSocket({ handleInitial, handleUpdate });
+
+	const replay = useReplayStatus();
 
 	const delay = useSettingsStore((state) => state.delay);
-	const syncing = delay > maxDelay;
+	const syncing = delay > maxDelay && !replay.isReplay;
 
 	useWakeLock();
 
-	const ended = useDataStore(({ state }) => state?.SessionStatus?.Status === 'Ends');
+	const ended = useDataStore(({ state }) => state?.SessionStatus?.Status === "Ends");
+	const replayEnded = replay.isReplay && (replay.ended || closedNormally);
 
 	return (
 		<div className="flex h-screen w-full md:pt-2 md:pr-2 md:pb-2">
-			<Sidebar key="sidebar" connected={connected} />
+			<Sidebar key="sidebar" connected={connected} replay={replay} />
 
 			<motion.div layout="size" className="flex h-full w-full flex-1 flex-col md:gap-2">
-				<DesktopStaticBar show={!syncing || ended} />
-				<MobileStaticBar show={!syncing || ended} connected={connected} />
+				<DesktopStaticBar show={!syncing || ended} replay={replay} />
+				<MobileStaticBar show={!syncing || ended} connected={connected} replay={replay} />
 
-				<div
-					className={
-						!syncing || ended ? 'no-scrollbar w-full flex-1 overflow-auto md:rounded-lg' : 'hidden'
-					}
-				>
+				{replayEnded && (
+					<div className="flex items-center justify-center gap-2 border-b border-amber-700 bg-amber-950/40 p-2 text-sm text-amber-200 md:rounded-lg md:border">
+						Replay ended.
+					</div>
+				)}
+
+				<div className={!syncing || ended ? "no-scrollbar w-full flex-1 overflow-auto md:rounded-lg" : "hidden"}>
 					<MobileDynamicBar />
 					{children}
 				</div>
@@ -57,8 +64,8 @@ export default function DashboardLayout({ children }: Props) {
 				<div
 					className={
 						syncing && !ended
-							? 'flex h-full flex-1 flex-col items-center justify-center gap-2 border-zinc-800 md:rounded-lg md:border'
-							: 'hidden'
+							? "flex h-full flex-1 flex-col items-center justify-center gap-2 border-zinc-800 md:rounded-lg md:border"
+							: "hidden"
 					}
 				>
 					<h1 className="my-20 text-center text-5xl font-bold">Syncing...</h1>
@@ -83,7 +90,15 @@ function MobileDynamicBar() {
 	);
 }
 
-function MobileStaticBar({ show, connected }: { show: boolean; connected: boolean }) {
+function MobileStaticBar({
+	show,
+	connected,
+	replay,
+}: {
+	show: boolean;
+	connected: boolean;
+	replay: ReturnType<typeof useReplayStatus>;
+}) {
 	const open = useSidebarStore((state) => state.open);
 
 	return (
@@ -91,18 +106,30 @@ function MobileStaticBar({ show, connected }: { show: boolean; connected: boolea
 			<div className="flex items-center gap-2">
 				<SidenavButton key="mobile" onClick={() => open()} />
 
-				<DelayInput saveDelay={500} />
-				<DelayTimer />
+				{!replay.isReplay && (
+					<>
+						<DelayInput saveDelay={500} />
+						<DelayTimer />
+						<ConnectionStatus connected={connected} />
+					</>
+				)}
 
-				<ConnectionStatus connected={connected} />
+				{replay.isReplay && (
+					<ReplayBar
+						path={replay.path}
+						positionMs={replay.positionMs ?? 0}
+						totalMs={replay.totalMs ?? 0}
+						speed={replay.speed}
+					/>
+				)}
 			</div>
 
-			{show && <TrackInfo />}
+			{show && !replay.isReplay && <TrackInfo />}
 		</div>
 	);
 }
 
-function DesktopStaticBar({ show }: { show: boolean }) {
+function DesktopStaticBar({ show, replay }: { show: boolean; replay: ReturnType<typeof useReplayStatus> }) {
 	const pinned = useSidebarStore((state) => state.pinned);
 	const pin = useSidebarStore((state) => state.pin);
 
@@ -118,9 +145,23 @@ function DesktopStaticBar({ show }: { show: boolean }) {
 				</AnimatePresence>
 			</div>
 
-			<div className="hidden md:items-center lg:flex">{show && <WeatherInfo />}</div>
+			{replay.isReplay && (
+				<div className="flex items-center">
+					<ReplayBar
+						path={replay.path}
+						positionMs={replay.positionMs ?? 0}
+						totalMs={replay.totalMs ?? 0}
+						speed={replay.speed}
+					/>
+				</div>
+			)}
 
-			<div className="flex justify-end">{show && <TrackInfo />}</div>
+			{!replay.isReplay && (
+				<>
+					<div className="hidden md:items-center lg:flex">{show && <WeatherInfo />}</div>
+					<div className="flex justify-end">{show && <TrackInfo />}</div>
+				</>
+			)}
 		</div>
 	);
 }

@@ -35,6 +35,8 @@ Techstack: Rust, SignalR, Axum
 
 Connects to f1 over signalr and serves realtime data over websockets to dashboard.
 
+Also serves archive replay: when a client posts to `/api/replay/start { path, speed }`, the live feed is paused and a past session is streamed from F1's public CDN (`livetiming.formula1.com/static/`) at the requested speed. `/api/replay/stop` resumes live, and `/api/replay/status` reports current mode and progress.
+
 envs:
 ```
 # logging
@@ -54,7 +56,7 @@ F1_DEV_URL=ws://localhost:8000/ws
 
 Techstack: Rust, Axum
 
-Handles all non realtime data depended things like past & future sessions.
+Handles all non realtime data depended things like past & future sessions. Includes the archive index endpoints (`/api/archive`, `/api/archive/session`) that the dashboard's Archive page uses to browse completed sessions for replay.
 
 envs:
 ```
