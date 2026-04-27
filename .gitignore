@@ -10,3 +10,7 @@ compose.env
 
 # data
 *.data.*
+
+# local setup docs
+ARCHIVE_REPLAY_SETUP.md
+REPLAY_TODO.md

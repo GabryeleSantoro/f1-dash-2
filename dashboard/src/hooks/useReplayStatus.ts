@@ -21,7 +21,7 @@ export type ReplayStatusInfo = {
 	ended: boolean;
 };
 
-const POLL_MS = 1000;
+const POLL_MS = 500;
 
 const DEFAULT: ReplayStatusInfo = {
 	isReplay: false,

@@ -8,6 +8,7 @@ import { fetchMap } from "@/lib/fetchMap";
 
 import { useDataStore } from "@/stores/useDataStore";
 import { useSettingsStore } from "@/stores/useSettingsStore";
+import { useReplayStatus } from "@/hooks/useReplayStatus";
 import { getTrackStatusMessage } from "@/lib/getTrackStatusMessage";
 import {
 	createSectors,
@@ -35,7 +36,7 @@ function getDriverPosition(
 	}
 
 	// Get all segments from all sectors
-	const allSegments = timingDriver.Sectors.flatMap((sector) => sector.Segments);
+	const allSegments = (timingDriver.Sectors ?? []).flatMap((sector) => sector?.Segments ?? []);
 
 	if (allSegments.length === 0) {
 		// No segments available, position at start/finish line
@@ -111,6 +112,10 @@ type Props = {
 export default function Map({ filter }: Props) {
 	const showCornerNumbers = useSettingsStore((state) => state.showCornerNumbers);
 	const favoriteDrivers = useSettingsStore((state) => state.favoriteDrivers);
+
+	const replay = useReplayStatus();
+	// dot transition ≈ typical gap between segment updates, scaled inversely by playback speed
+	const dotTransitionMs = Math.max(250, Math.round(2000 / (replay.speed ?? 1)));
 
 	// const positions = useDataStore((state) => state.positions);
 	const drivers = useDataStore((state) => state?.state?.DriverList);
@@ -303,6 +308,7 @@ export default function Map({ filter }: Props) {
 									rotation={rotation}
 									centerX={centerX}
 									centerY={centerY}
+									transitionMs={dotTransitionMs}
 								/>
 							);
 						})}
@@ -339,9 +345,22 @@ type CarDotProps = {
 
 	centerX: number;
 	centerY: number;
+
+	transitionMs: number;
 };
 
-const CarDot = ({ pos, name, color, favoriteDriver, pit, hidden, rotation, centerX, centerY }: CarDotProps) => {
+const CarDot = ({
+	pos,
+	name,
+	color,
+	favoriteDriver,
+	pit,
+	hidden,
+	rotation,
+	centerX,
+	centerY,
+	transitionMs,
+}: CarDotProps) => {
 	const rotatedPos = rotate(pos.X, pos.Y, rotation, centerX, centerY);
 	const transform = [`translateX(${rotatedPos.x}px)`, `translateY(${rotatedPos.y}px)`].join(" ");
 
@@ -349,7 +368,7 @@ const CarDot = ({ pos, name, color, favoriteDriver, pit, hidden, rotation, cente
 		<g
 			className={clsx("fill-zinc-700", { "opacity-30": pit }, { "opacity-0!": hidden })}
 			style={{
-				transition: "all 1s linear",
+				transition: `transform ${transitionMs}ms linear, fill 0.3s linear, opacity 0.3s linear`,
 				transform,
 				...(color && { fill: `#${color}` }),
 			}}

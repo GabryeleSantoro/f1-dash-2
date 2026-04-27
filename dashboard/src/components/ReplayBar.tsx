@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 
 import { useReplayControls, type ReplaySpeed } from "@/hooks/useReplayControls";
 
@@ -40,7 +40,8 @@ type Props = {
 
 export default function ReplayBar({ path, positionMs, totalMs, speed }: Props) {
 	const router = useRouter();
-	const { stop, setSpeed } = useReplayControls();
+	const { stop, setSpeed, seek } = useReplayControls();
+	const barRef = useRef<HTMLDivElement | null>(null);
 
 	const percent = totalMs > 0 ? Math.min(100, (positionMs / totalMs) * 100) : 0;
 	const currentSpeed: ReplaySpeed = (speed ?? 1) as ReplaySpeed;
@@ -53,9 +54,19 @@ export default function ReplayBar({ path, positionMs, totalMs, speed }: Props) {
 	const handleSpeed = useCallback(
 		async (val: ReplaySpeed) => {
 			if (!path) return;
-			await setSpeed(path, val);
+			await setSpeed(path, val, positionMs);
 		},
-		[path, setSpeed],
+		[path, setSpeed, positionMs],
+	);
+
+	const handleSeek = useCallback(
+		async (e: React.MouseEvent<HTMLDivElement>) => {
+			if (totalMs <= 0 || !barRef.current) return;
+			const rect = barRef.current.getBoundingClientRect();
+			const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+			await seek(ratio * totalMs);
+		},
+		[seek, totalMs],
 	);
 
 	return (
@@ -67,8 +78,16 @@ export default function ReplayBar({ path, positionMs, totalMs, speed }: Props) {
 			<div className="flex items-center gap-2">
 				<span className="font-mono text-xs text-zinc-400 tabular-nums">{formatTime(positionMs)}</span>
 
-				<div className="h-1.5 w-32 overflow-hidden rounded-full bg-zinc-700 sm:w-40">
-					<div className="h-full bg-emerald-500" style={{ width: `${percent}%` }} />
+				<div
+					ref={barRef}
+					onClick={handleSeek}
+					title="Click to seek"
+					className="h-1.5 w-32 cursor-pointer overflow-hidden rounded-full bg-zinc-700 transition-[height] hover:h-2 sm:w-40"
+				>
+					<div
+						className="h-full bg-emerald-500 transition-[width] duration-500 ease-linear"
+						style={{ width: `${percent}%` }}
+					/>
 				</div>
 
 				<span className="font-mono text-xs text-zinc-400 tabular-nums">{formatTime(totalMs)}</span>

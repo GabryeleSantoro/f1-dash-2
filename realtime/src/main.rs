@@ -47,11 +47,16 @@ async fn main() -> Result<(), Error> {
                         info!("supervisor: starting live ingest");
                         f1::ingest_f1(state_service.clone(), sender.clone(), rx).await
                     }
-                    Source::Archive { path, speed } => {
-                        info!(%path, speed, "supervisor: starting archive ingest");
+                    Source::Archive {
+                        path,
+                        speed,
+                        start_offset_ms,
+                    } => {
+                        info!(%path, speed, start_offset_ms, "supervisor: starting archive ingest");
                         archive::ingest_archive(
                             path,
                             speed,
+                            start_offset_ms,
                             state_service.clone(),
                             sender.clone(),
                             replay_state.clone(),

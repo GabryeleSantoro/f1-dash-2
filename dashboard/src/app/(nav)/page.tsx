@@ -21,9 +21,15 @@ export default function Home() {
 					telemetry and timing
 				</h1>
 
-				<div className="flex flex-wrap gap-4">
+				<div className="flex flex-wrap justify-center gap-4">
 					<Link href="/dashboard">
 						<Button className="rounded-xl! border-2 border-transparent p-4 font-medium">Go to Dashboard</Button>
+					</Link>
+
+					<Link href="/archive">
+						<Button className="rounded-xl! border-2 border-indigo-500 bg-indigo-600! p-4 font-medium">
+							Revive a Grand Prix
+						</Button>
 					</Link>
 
 					<Link href="/schedule">
@@ -34,6 +40,32 @@ export default function Home() {
 				</div>
 
 				<ScrollHint />
+			</section>
+
+			<section className="pb-20">
+				<div className="rounded-2xl border-2 border-indigo-700 bg-linear-to-br from-indigo-950 to-zinc-950 p-8">
+					<div className="mb-3 flex items-center gap-2">
+						<span className="rounded-full bg-indigo-600 px-2 py-0.5 text-xs font-semibold text-white">NEW</span>
+						<h2 className="text-2xl font-bold">Revive a Grand Prix</h2>
+					</div>
+
+					<p className="text-md mb-6 text-zinc-300">
+						Missed a race? Want to relive a legendary qualifying or a historic Grand Prix? The new Archive feature
+						lets you replay any past Formula 1 session straight from F1&apos;s public timing archive — full live
+						timing, telemetry, and tower exactly as it streamed on race day.
+					</p>
+
+					<ul className="text-md mb-6 list-disc space-y-2 pl-6 text-zinc-300">
+						<li>Browse meetings and sessions by year</li>
+						<li>Watch any practice, qualifying, sprint, or race</li>
+						<li>Adjustable playback speed: 0.5×, 1×, 2×, 4×</li>
+						<li>Stop at any moment to jump back to live</li>
+					</ul>
+
+					<Link href="/archive">
+						<Button className="rounded-xl! bg-indigo-600! p-4 font-medium">Open the Archive</Button>
+					</Link>
+				</div>
 			</section>
 
 			<section className="pb-20">

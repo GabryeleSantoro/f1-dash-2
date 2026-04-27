@@ -3,7 +3,7 @@ use std::{env, sync::Arc};
 use anyhow::Error;
 use axum::{
     Router,
-    http::{HeaderValue, Method},
+    http::{HeaderValue, Method, header::CONTENT_TYPE},
     routing::{get, post},
 };
 use tokio::{
@@ -55,6 +55,7 @@ pub async fn start(
         .route("/api/connections", get(connections::current_connections))
         .route("/api/replay/start", post(replay::start_replay))
         .route("/api/replay/stop", post(replay::stop_replay))
+        .route("/api/replay/seek", post(replay::seek_replay))
         .route("/api/replay/status", get(replay::status))
         .with_state(context)
         .layer(cors)
@@ -77,5 +78,6 @@ pub fn cors_layer() -> Result<CorsLayer, Error> {
 
     Ok(CorsLayer::new()
         .allow_origin(origins)
-        .allow_methods([Method::GET, Method::POST, Method::CONNECT]))
+        .allow_methods([Method::GET, Method::POST, Method::CONNECT])
+        .allow_headers([CONTENT_TYPE]))
 }

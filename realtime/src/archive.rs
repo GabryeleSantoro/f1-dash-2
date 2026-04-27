@@ -74,6 +74,7 @@ async fn fetch_topic_stream(path: &str, topic: &str) -> Result<Vec<TimelineEntry
 pub async fn ingest_archive(
     path: String,
     speed: f32,
+    start_offset_ms: u64,
     state_service: StateService,
     sender: Sender<Broadcast>,
     replay_state: ReplayState,
@@ -81,12 +82,11 @@ pub async fn ingest_archive(
 ) -> Result<(), Error> {
     let speed = if speed <= 0.0 { 1.0 } else { speed };
 
-    info!(%path, speed, "starting archive ingest");
+    info!(%path, speed, start_offset_ms, "starting archive ingest");
 
     // start clean
     state_service.set_state(Value::Object(serde_json::Map::new())).await?;
     replay_state.reset();
-    let _ = sender.send(Broadcast::Initial("{}".to_string()));
 
     // fetch all topic streams in parallel
     let mut tasks = Vec::new();
@@ -124,8 +124,28 @@ pub async fn ingest_archive(
     replay_state.total_ms.store(total_ms, Ordering::Relaxed);
     info!(entries = timeline.len(), total_ms, "archive timeline ready");
 
-    let mut prev_ts: u64 = 0;
-    for entry in timeline {
+    // fast-forward: silently merge entries before offset to build initial state
+    let split_idx = timeline.partition_point(|e| e.timestamp_ms < start_offset_ms);
+    if split_idx > 0 {
+        for entry in &timeline[..split_idx] {
+            let mut map = serde_json::Map::new();
+            map.insert(entry.topic.clone(), entry.payload.clone());
+            if let Err(err) = state_service.update_state(Value::Object(map)).await {
+                error!(?err, "failed to merge archive prefill");
+            }
+        }
+        info!(prefilled = split_idx, "archive prefill complete");
+    }
+
+    // emit initial state at offset
+    let initial = state_service.get_state_string().await?;
+    let _ = sender.send(Broadcast::Initial(initial));
+    replay_state
+        .position_ms
+        .store(start_offset_ms, Ordering::Relaxed);
+
+    let mut prev_ts: u64 = start_offset_ms;
+    for entry in timeline.into_iter().skip(split_idx) {
         let dt_ms = entry.timestamp_ms.saturating_sub(prev_ts);
         let sleep_ms = (dt_ms as f32 / speed).round() as u64;
 

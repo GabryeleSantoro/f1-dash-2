@@ -3,7 +3,11 @@ use std::sync::{Arc, atomic::AtomicU64};
 #[derive(Clone, Debug, PartialEq)]
 pub enum Source {
     Live,
-    Archive { path: String, speed: f32 },
+    Archive {
+        path: String,
+        speed: f32,
+        start_offset_ms: u64,
+    },
 }
 
 #[derive(Clone, Debug)]

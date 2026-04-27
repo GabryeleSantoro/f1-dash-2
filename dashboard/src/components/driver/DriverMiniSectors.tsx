@@ -16,7 +16,7 @@ export default function DriverMiniSectors({ sectors = [], bestSectors }: Props) 
 		<div className="flex gap-2">
 			{sectors.map((sector, i) => (
 				<div key={`sector.${i}`} className="flex flex-col gap-1">
-					{showMiniSectors && (
+					{showMiniSectors && sector.Segments && (
 						<div className="flex flex-row gap-1">
 							{sector.Segments.map((segment, j) => (
 								<MiniSector status={segment.Status} key={`sector.mini.${j}`} />

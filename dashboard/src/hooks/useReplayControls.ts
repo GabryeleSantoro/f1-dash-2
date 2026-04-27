@@ -17,19 +17,36 @@ export const useReplayControls = () => {
 		}
 	}, []);
 
-	const setSpeed = useCallback(async (path: string, speed: ReplaySpeed): Promise<boolean> => {
+	const setSpeed = useCallback(
+		async (path: string, speed: ReplaySpeed, startOffsetMs: number): Promise<boolean> => {
+			try {
+				const res = await fetch(`${env.NEXT_PUBLIC_LIVE_URL}/api/replay/start`, {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({ path, speed, startOffsetMs: Math.max(0, Math.floor(startOffsetMs)) }),
+				});
+				return res.ok;
+			} catch (e) {
+				console.error("replay setSpeed error", e);
+				return false;
+			}
+		},
+		[],
+	);
+
+	const seek = useCallback(async (positionMs: number): Promise<boolean> => {
 		try {
-			const res = await fetch(`${env.NEXT_PUBLIC_LIVE_URL}/api/replay/start`, {
+			const res = await fetch(`${env.NEXT_PUBLIC_LIVE_URL}/api/replay/seek`, {
 				method: "POST",
 				headers: { "content-type": "application/json" },
-				body: JSON.stringify({ path, speed }),
+				body: JSON.stringify({ positionMs: Math.max(0, Math.floor(positionMs)) }),
 			});
 			return res.ok;
 		} catch (e) {
-			console.error("replay setSpeed error", e);
+			console.error("replay seek error", e);
 			return false;
 		}
 	}, []);
 
-	return { stop, setSpeed };
+	return { stop, setSpeed, seek };
 };

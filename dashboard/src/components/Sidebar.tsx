@@ -152,9 +152,19 @@ export default function Sidebar({ connected, replay }: Props) {
 						<Item item={{ href: "/dashboard/settings", name: "Settings" }} />
 
 						<Item target="_blank" item={{ href: "/schedule", name: "Schedule" }} />
-						<Item target="_blank" item={{ href: "/archive", name: "Archive" }} />
 						<Item target="_blank" item={{ href: "/help", name: "Help" }} />
 						<Item target="_blank" item={{ href: "/", name: "Home" }} />
+					</div>
+
+					<p className="mt-4 p-2 text-sm text-zinc-500">Revive</p>
+
+					<div className="flex flex-col gap-1">
+						<Link href="/archive" target="_blank">
+							<div className="flex items-center justify-between rounded-lg bg-indigo-600 p-1 px-2 font-medium text-white hover:bg-indigo-500">
+								<span>Revive a GP</span>
+								<span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-semibold">NEW</span>
+							</div>
+						</Link>
 					</div>
 
 					<p className="mt-4 p-2 text-sm text-zinc-500">Links</p>

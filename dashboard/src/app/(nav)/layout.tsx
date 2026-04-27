@@ -25,11 +25,15 @@ export default function Layout({ children }: Props) {
 					<Link className="transition duration-100 active:scale-95" href="/schedule">
 						Schedule
 					</Link>
-					<Link className="transition duration-100 active:scale-95" href="/archive">
-						Archive
-					</Link>
 					<Link className="transition duration-100 active:scale-95" href="/help">
 						Help
+					</Link>
+					<Link
+						className="flex items-center gap-1.5 rounded-md bg-indigo-600 px-2 py-0.5 font-medium text-white transition duration-100 hover:bg-indigo-500 active:scale-95"
+						href="/archive"
+					>
+						<span className="hidden h-1.5 w-1.5 rounded-full bg-white sm:inline-block" />
+						Revive a GP
 					</Link>
 				</div>
 

@@ -25,7 +25,7 @@ export default function TrackViolations() {
 	const driversTiming = useDataStore((state) => state.state?.TimingData);
 
 	const trackLimits =
-		messages?.Messages.filter((rcm) => rcm.Category == "Other")
+		messages?.Messages?.filter((rcm) => rcm.Category == "Other")
 			.filter((rcm) => rcm.Message.includes("TRACK LIMITS"))
 			.reduce((acc: Violations, violations) => {
 				const carNr = findCarNumber(violations.Message);
